@@ -1,69 +1,86 @@
-export interface UploadResponse {
-  success: boolean;
-  fileId?: string;
-  error?: string;
-  progress?: number;
-}
+// File: /api/upload.ts
+import { v2 as cloudinary } from 'cloudinary';
+import formidable, { File } from 'formidable';
+import fs from 'fs';
 
-export interface ProcessingStatus {
-  status: 'uploading' | 'processing' | 'completed' | 'error';
-  progress: number;
-  message: string;
-  fileId?: string;
-}
+// Generic request/response types for non-Next.js/Vercel environment
+type ApiRequest = any;
+type ApiResponse = any;
 
-export class UploadAPI {
-  private static baseUrl = '/api';
+// Ensure Vercel disables its default body parser
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-  static async uploadFile(file: File): Promise<UploadResponse> {
+// Configure Cloudinary with your environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
+
+export default async function handler(req: ApiRequest, res: ApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
+  const form = new formidable.IncomingForm({
+    uploadDir: '/tmp',
+    keepExtensions: true,
+    maxFileSize: 1024 * 1024 * 500, // 500MB max
+  });
+
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      console.error('Form parsing error:', err);
+      return res.status(400).json({ success: false, error: 'File parsing failed' });
+    }
+
+    const file = Array.isArray(files.file) ? files.file[0] : files.file;
+    if (!file || typeof file === 'undefined') {
+      return res.status(400).json({ success: false, error: 'No file provided' });
+    }
+    if (!file || !file.filepath) {
+      return res.status(400).json({ success: false, error: 'No file provided' });
+    }
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${this.baseUrl}/upload`, {
-        method: 'POST',
-        body: formData,
+      const upload = await cloudinary.uploader.upload(file.filepath, {
+        resource_type: 'video',
+        folder: 'clipgenius_uploads',
       });
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+      // Clean up the temporary file
+      fs.unlink(file.filepath, () => {});
+
+      // 👇 Trigger processing job after successful upload
+      try {
+        const baseUrl = process.env.VITE_API_BASE_URL || 'http://localhost:3000';
+        await fetch(`${baseUrl}/api/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            fileId: upload.public_id, 
+            style: 'viral',
+            url: upload.secure_url 
+          }),
+        });
+        console.log('✅ Processing job triggered for fileId:', upload.public_id);
+      } catch (processErr) {
+        console.error('⚠️ Failed to trigger processing job:', processErr);
+        // Don't fail the upload if processing trigger fails
       }
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Upload failed',
-      };
+      return res.status(200).json({
+        success: true,
+        fileId: upload.public_id,
+        url: upload.secure_url,
+      });
+    } catch (uploadErr) {
+      console.error('Cloudinary upload error:', uploadErr);
+      return res.status(500).json({ success: false, error: 'Upload failed' });
     }
-  }
-
-  static async getProcessingStatus(fileId: string): Promise<ProcessingStatus> {
-    try {
-      const response = await fetch(`${this.baseUrl}/status/${fileId}`);
-      
-      if (!response.ok) {
-        throw new Error(`Status check failed: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      return {
-        status: 'error',
-        progress: 0,
-        message: error instanceof Error ? error.message : 'Status check failed',
-      };
-    }
-  }
-
-  static async downloadClip(clipId: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/download/${clipId}`);
-    
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.statusText}`);
-    }
-
-    return response.blob();
-  }
-} 
+  });
+}
