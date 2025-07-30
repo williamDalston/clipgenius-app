@@ -1,9 +1,11 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Scissors, Zap } from 'lucide-react'
+import { useUser } from '@clerk/clerk-react'
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate()
+  const { isSignedIn } = useUser()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans flex flex-col items-center justify-center text-center px-4">
@@ -27,12 +29,22 @@ const LandingPage: React.FC = () => {
       >
         ⚡ Start Creating
       </button>
-      <button
-        className="text-black underline"
-        onClick={() => navigate('/login')}
-      >
-        Sign In →
-      </button>
+      {!isSignedIn && (
+        <div className="flex space-x-4">
+          <Link
+            to="/sign-in"
+            className="text-gray-600 hover:text-gray-900 underline"
+          >
+            Sign In
+          </Link>
+          <Link
+            to="/sign-up"
+            className="text-gray-600 hover:text-gray-900 underline"
+          >
+            Sign Up
+          </Link>
+        </div>
+      )}
 
       <div className="mt-16 space-y-6 text-left max-w-md text-sm text-gray-700">
         <div>

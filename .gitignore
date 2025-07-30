@@ -27,3 +27,4 @@ out/
 *.secret
 *.key
 .env
+.env.local
