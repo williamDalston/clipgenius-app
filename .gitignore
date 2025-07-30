@@ -26,3 +26,4 @@ out/
 # Misc
 *.secret
 *.key
+.env
