@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Link, NavLink } from 'react-router-dom';
 import { Scissors, Upload, Eye, Palette, Download, User, Zap } from 'lucide-react';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 
 // Import the Zustand store for global state management
 import { useAppStore } from './store/useAppStore';
@@ -28,7 +29,26 @@ const Header: React.FC = () => {
           <div className="flex justify-between items-center h-16">
           <Logo /> {/* Render the Logo component */}
           <Navigation /> {/* Render the Navigation component */}
-          <UserInfo credits={credits} /> {/* Render the UserInfo component, passing credits */}
+          <div className="flex items-center space-x-4">
+            <UserInfo credits={credits} /> {/* Render the UserInfo component, passing credits */}
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton 
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: 'w-8 h-8',
+                    userButtonTrigger: 'focus:shadow-none',
+                  }
+                }}
+              />
+            </SignedIn>
+          </div>
         </div>
       </div>
     </header>
@@ -108,6 +128,14 @@ const Navigation: React.FC = () => (
       <Download size={18} />
       <span>Export</span>
     </NavLink>
+    <div className="border-l border-gray-300 mx-2"></div>
+    <Link
+      to="/creator"
+      className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+    >
+      <Zap size={18} />
+      <span>Creator Studio</span>
+    </Link>
               </nav>
 );
 

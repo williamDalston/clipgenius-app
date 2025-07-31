@@ -23,14 +23,22 @@ const LandingPage: React.FC = () => {
         AI-powered video editing that automatically detects highlights, adds captions, and creates engaging clips ready for social media.
       </p>
 
-      <button
-        className="bg-primary text-white px-6 py-2 rounded hover:bg-primary/90 transition mb-3"
-        onClick={() => navigate('/app/upload')}
-      >
-        ⚡ Start Creating
-      </button>
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <button
+          className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition font-semibold"
+          onClick={() => navigate('/app/upload')}
+        >
+          ⚡ Start Creating
+        </button>
+        <Link
+          to="/creator"
+          className="bg-white text-gray-700 px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition font-semibold"
+        >
+          🎬 Creator Studio
+        </Link>
+      </div>
       {!isSignedIn && (
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 mb-8">
           <Link
             to="/sign-in"
             className="text-gray-600 hover:text-gray-900 underline"

@@ -8,19 +8,26 @@ import App from './App'
 import LandingPage from './pages/LandingPage'
 import SignInPage from './pages/auth/SignIn'
 import SignUpPage from './pages/auth/SignUp'
+import CreatorPage from './pages/CreatorPage'
 import './index.css'
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+// Import your Publishable Key
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+if (!PUBLISHABLE_KEY) {
+  throw new Error('Add your Clerk Publishable Key to the .env file')
+}
 
 const root = document.getElementById('root')!
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={clerkPubKey}>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/sign-in" element={<SignInPage />} />
           <Route path="/sign-up" element={<SignUpPage />} />
+          <Route path="/creator" element={<CreatorPage />} />
           <Route path="/app/*" element={
             <>
               <SignedIn>
