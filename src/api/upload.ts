@@ -1,86 +1,54 @@
-// File: /api/upload.ts
-import { v2 as cloudinary } from 'cloudinary';
-import formidable, { File } from 'formidable';
-import fs from 'fs';
+import formidable from 'formidable'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { v4 as uuidv4 } from 'uuid'
+import { uploadToCloudinary } from '../lib/uploadToCloudinary'
+import { saveJobMetadata } from '../../database/firestore'
 
-// Generic request/response types for non-Next.js/Vercel environment
-type ApiRequest = any;
-type ApiResponse = any;
-
-// Ensure Vercel disables its default body parser
 export const config = {
   api: {
     bodyParser: false,
   },
-};
+}
 
-// Configure Cloudinary with your environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
-  api_key: process.env.CLOUDINARY_API_KEY!,
-  api_secret: process.env.CLOUDINARY_API_SECRET!,
-});
-
-export default async function handler(req: ApiRequest, res: ApiResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method not allowed' })
   }
 
-  const form = new formidable.IncomingForm({
-    uploadDir: '/tmp',
-    keepExtensions: true,
-    maxFileSize: 1024 * 1024 * 500, // 500MB max
-  });
-
+  const form = formidable({ multiples: false })
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error('Form parsing error:', err);
-      return res.status(400).json({ success: false, error: 'File parsing failed' });
+      console.error('❌ Error parsing form:', err)
+      return res.status(500).json({ success: false, error: 'File parsing error' })
     }
 
-    const file = Array.isArray(files.file) ? files.file[0] : files.file;
-    if (!file || typeof file === 'undefined') {
-      return res.status(400).json({ success: false, error: 'No file provided' });
+    const file = files.file
+    if (!file || Array.isArray(file)) {
+      return res.status(400).json({ success: false, error: 'Invalid file upload' })
     }
-    if (!file || !file.filepath) {
-      return res.status(400).json({ success: false, error: 'No file provided' });
-    }
+
+    const fileId = uuidv4()
 
     try {
-      const upload = await cloudinary.uploader.upload(file.filepath, {
-        resource_type: 'video',
-        folder: 'clipgenius_uploads',
-      });
+      const cloudinaryResult = await uploadToCloudinary(file.filepath)
 
-      // Clean up the temporary file
-      fs.unlink(file.filepath, () => {});
+      await saveJobMetadata(fileId, {
+        status: 'uploading',
+        progress: 10,
+        userId: 'anonymous', // later: Clerk user ID
+        originalFileName: file.originalFilename || 'unnamed',
+        cloudinaryUrl: cloudinaryResult.secure_url,
+      })
 
-      // 👇 Trigger processing job after successful upload
-      try {
-        const baseUrl = process.env.VITE_API_BASE_URL || 'http://localhost:3000';
-        await fetch(`${baseUrl}/api/process`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            fileId: upload.public_id, 
-            style: 'viral',
-            url: upload.secure_url 
-          }),
-        });
-        console.log('✅ Processing job triggered for fileId:', upload.public_id);
-      } catch (processErr) {
-        console.error('⚠️ Failed to trigger processing job:', processErr);
-        // Don't fail the upload if processing trigger fails
-      }
-
+      console.log(`✅ File ${fileId} uploaded successfully`)
       return res.status(200).json({
         success: true,
-        fileId: upload.public_id,
-        url: upload.secure_url,
-      });
-    } catch (uploadErr) {
-      console.error('Cloudinary upload error:', uploadErr);
-      return res.status(500).json({ success: false, error: 'Upload failed' });
+        fileId,
+        url: cloudinaryResult.secure_url,
+      })
+    } catch (error) {
+      console.error('❌ Upload or Firestore error:', error)
+      return res.status(500).json({ success: false, error: 'Upload failed' })
     }
-  });
+  })
 }
