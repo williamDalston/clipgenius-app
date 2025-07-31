@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Link, NavLink } from 'react-router-dom';
 import { Scissors, Upload, Eye, Palette, Download, User, Zap } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
+import { motion } from 'framer-motion';
 
 // Import the Zustand store for global state management
 import { useAppStore } from './store/useAppStore';
@@ -14,6 +15,7 @@ import UploadTab from './components/tabs/UploadTab';
 import DetectTab from './components/tabs/DetectTab';
 import StyleTab from './components/tabs/StyleTab';
 import ExportTab from './components/tabs/ExportTab';
+import LandingPage from './pages/LandingPage';
 
 // --- Extracted Header Component ---
 // This component handles the main application header, including the logo,
@@ -138,6 +140,13 @@ const Navigation: React.FC = () => (
       <Zap size={18} />
       <span>Creator Studio</span>
     </Link>
+    <Link
+      to="/app/landing"
+      className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+    >
+      <Scissors size={18} />
+      <span>Home</span>
+    </Link>
               </nav>
 );
 
@@ -172,11 +181,21 @@ const App: React.FC = () => {
 
   return (
     // Main container for the application, applying global styles
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans"
+    >
       <Header />
 
       {/* Main content area for the app tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.6 }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
         <Routes>
           {/* Redirect from /app to /app/upload as the default tab */}
           <Route index element={<UploadTab />} />
@@ -184,11 +203,12 @@ const App: React.FC = () => {
           <Route path="detect" element={<DetectTab />} />
           <Route path="style" element={<StyleTab />} />
           <Route path="export" element={<ExportTab />} />
+          <Route path="landing" element={<LandingPage />} />
           {/* Fallback for any invalid app sub-routes, redirects to upload */}
           <Route path="*" element={<UploadTab />} />
         </Routes>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
