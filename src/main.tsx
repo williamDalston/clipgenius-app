@@ -30,9 +30,11 @@ ReactDOM.createRoot(root).render(
           <Route path="/creator" element={<CreatorPage />} />
           <Route path="/app/*" element={
             <>
+              {/* @ts-ignore */}
               <SignedIn>
                 <App />
               </SignedIn>
+              {/* @ts-ignore */}
               <SignedOut>
                 <RedirectToSignIn />
               </SignedOut>

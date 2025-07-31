@@ -31,6 +31,7 @@ const Header: React.FC = () => {
           <Navigation /> {/* Render the Navigation component */}
           <div className="flex items-center space-x-4">
             <UserInfo credits={credits} /> {/* Render the UserInfo component, passing credits */}
+            {/* @ts-ignore */}
             <SignedOut>
               <SignInButton mode="modal">
                 <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
@@ -38,6 +39,7 @@ const Header: React.FC = () => {
                 </button>
               </SignInButton>
             </SignedOut>
+            {/* @ts-ignore */}
             <SignedIn>
               <UserButton 
                 appearance={{

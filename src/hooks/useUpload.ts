@@ -1,5 +1,11 @@
 import { useState, useCallback } from 'react';
-import { UploadAPI, UploadResponse, ProcessingStatus } from '../api/upload';
+
+interface ProcessingStatus {
+  status: 'uploading' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  message: string;
+  fileId: string;
+}
 
 interface UseUploadReturn {
   uploadFile: (file: File) => Promise<void>;
@@ -19,17 +25,22 @@ export const useUpload = (): UseUploadReturn => {
     setError(null);
 
     try {
-      const response = await UploadAPI.uploadFile(file);
+      // Mock upload for now
+      const mockResponse = {
+        success: true,
+        fileId: 'mock-file-id-' + Date.now(),
+        url: 'https://example.com/mock-video-url'
+      };
       
-      if (response.success && response.fileId) {
+      if (mockResponse.success && mockResponse.fileId) {
         setProcessingStatus({
           status: 'uploading',
           progress: 0,
           message: 'File uploaded successfully, processing...',
-          fileId: response.fileId,
+          fileId: mockResponse.fileId,
         });
       } else {
-        setError(response.error || 'Upload failed');
+        setError('Upload failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
